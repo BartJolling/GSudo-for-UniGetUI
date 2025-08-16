@@ -22,6 +22,8 @@ namespace gsudo.Commands
         public string AllowedSid { get; set; }
         public TimeSpan? CacheDuration { get; set; }
 
+        public void CheckIntegrity() { return; }
+
         public async Task<int> Execute()
         {
             if (!AllowedPid.HasValue)
@@ -85,7 +87,7 @@ namespace gsudo.Commands
                         LogLevel.Warning);
 
                     // wait until the cache service becomes available (2 seconds max)
-                    for (int i=0; i<40 && !NamedPipeClient.IsServiceAvailable(AllowedPid, AllowedSid); i++)
+                    for (int i = 0; i < 40 && !NamedPipeClient.IsServiceAvailable(AllowedPid, AllowedSid); i++)
                         await Task.Delay(50).ConfigureAwait(false);
                 }
 
@@ -119,16 +121,16 @@ Usage:
 ------
 gsudo cache {{on | off}} [-p {{pid}}] [-d {{time}}]	Start/stop a gsudo cache session.
  -p, --pid {{pid}}			Specify which process can use the cache. (Use 0 for any, Default=caller pid)
- -d, --duration {{hh | hh:mm | hh:mm:ss}}	Sets the maximum idle time for the cache before termination. 
+ -d, --duration {{hh | hh:mm | hh:mm:ss}}	Sets the maximum idle time for the cache before termination.
 					Use '-1' to keep open until logoff (or `cache off`, or `-k`).
 					Current idle duration is: {Settings.CacheDuration.GetStringValue()}
 
 gsudo -k			Stops all active cache sessions.
 gsudo status			Shows info regarding the user, elevation, and cache status
-gsudo config CacheMode {{mode}}	Change the cache mode. 
+gsudo config CacheMode {{mode}}	Change the cache mode.
 
 Available Cache Modes:
-  * Disabled: Every elevation shows a UAC popup. 
+  * Disabled: Every elevation shows a UAC popup.
   * Explicit: (default) Every elevation shows a UAC popup, unless a cache session is started with `gsudo cache on`
   * Auto: Simil-unix-sudo. The first elevation shows a UAC Popup and starts a cache session automatically.
 Current Cache Mode is: {Settings.CacheMode.ToString()}");

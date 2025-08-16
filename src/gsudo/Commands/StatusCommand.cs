@@ -18,6 +18,8 @@ namespace gsudo.Commands
         public string Key { get; set; }
         public bool NoOutput { get; set; }
 
+        public void CheckIntegrity() { return; }
+
         public Task<int> Execute()
         {
             var status = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
@@ -63,9 +65,9 @@ namespace gsudo.Commands
                             Console.WriteLine(GetJsonValue(val));
                     }
 
-                    // If the value is true, process returns success (exitcode 0) 
+                    // If the value is true, process returns success (exitcode 0)
                     // If the value is false, process returns failure (exitcode 1)
-                    if (val is bool) 
+                    if (val is bool)
                         return Task.FromResult((bool)val ? 0 : 1);
                 }
                 else
@@ -196,7 +198,7 @@ namespace gsudo.Commands
                     catch
                     { }
 
-                    try 
+                    try
                     {
                         username = p.GetProcessUser()?.Name ?? unknown;
                     }

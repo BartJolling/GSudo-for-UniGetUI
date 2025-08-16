@@ -21,6 +21,8 @@ namespace gsudo.Commands
             Verbose = verbose;
         }
 
+        public void CheckIntegrity() { return; }
+
         public Task<int> Execute()
         {
             try

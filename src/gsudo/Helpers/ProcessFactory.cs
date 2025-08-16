@@ -20,17 +20,15 @@ namespace gsudo.Helpers
         {
             Logger.Instance.Log($"Elevating process: {filename} {arguments}", LogLevel.Debug);
 
-            var process = new Process();
-            process.StartInfo = new ProcessStartInfo(filename, arguments)
+            var process = new Process
             {
-                UseShellExecute = true,
-                Verb = "runas",
+                StartInfo = new ProcessStartInfo(filename, arguments)
+                {
+                    UseShellExecute = true,
+                    Verb = "runas",
+                    WindowStyle = hidden ? ProcessWindowStyle.Hidden : ProcessWindowStyle.Normal
+                }
             };
-
-            if (hidden)
-                process.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
-            else
-                process.StartInfo.WindowStyle = ProcessWindowStyle.Normal;
 
             try
             {
@@ -220,7 +218,7 @@ namespace gsudo.Helpers
         /// </summary>
         public static SafeProcessHandle StartAttachedWithIntegrity(IntegrityLevel integrityLevel, string appToRun, string args, string startupFolder, bool newWindow, bool hidden)
         {
-            // must return a process Handle because we cant create a Process() from a handle and get the exit code. 
+            // must return a process Handle because we cant create a Process() from a handle and get the exit code.
             Logger.Instance.Log($"{nameof(StartAttachedWithIntegrity)}: {appToRun} {args}", LogLevel.Debug);
             int currentIntegrity = SecurityHelper.GetCurrentIntegrityLevel();
             SafeTokenHandle newToken;
@@ -365,4 +363,3 @@ namespace gsudo.Helpers
 
     }
 }
-

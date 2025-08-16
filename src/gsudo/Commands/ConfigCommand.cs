@@ -13,6 +13,8 @@ namespace gsudo.Commands
 
         public IEnumerable<string> value { get; set; }
 
+        public void CheckIntegrity() { return; }
+
         public Task<int> Execute()
         {
             RegistrySetting setting = null;
@@ -21,7 +23,7 @@ namespace gsudo.Commands
             {
                 return new HelpCommand().Execute();
             }
-             
+
             if (key.In("--reset"))
             {
                 throw new ApplicationException("Invalid argument '--reset'. Use `gsudo config {setting} --reset` to reset a specific setting or `gsudo config --reset-all` to reset all settings to their defaults.");
@@ -57,7 +59,7 @@ namespace gsudo.Commands
 
             if (key != null && key.Contains('=', StringComparison.Ordinal))
             {
-                var list = new List<string>{ key.Substring(key.IndexOf("=", StringComparison.Ordinal) + 1) };
+                var list = new List<string> { key.Substring(key.IndexOf("=", StringComparison.Ordinal) + 1) };
                 list.AddRange(value);
                 value = list; // in net7 => value.Prepend(key.Substring(key.IndexOf("=", StringComparison.Ordinal) + 1))
                 key = key.Substring(0, key.IndexOf("=", StringComparison.Ordinal));
@@ -67,10 +69,10 @@ namespace gsudo.Commands
             {
                 // print all configs
                 foreach (var k in Settings.AllKeys)
-                {                    
-                    var scope = k.Value.HasGlobalValue() ? "(global)" : 
+                {
+                    var scope = k.Value.HasGlobalValue() ? "(global)" :
                                     (k.Value.HasLocalValue() ? "(user)" : "(default)");
-                    Console.WriteLine($"{k.Value.Name} = \"{ k.Value.GetStringValue().ToString()}\" ".PadRight(50) + scope);
+                    Console.WriteLine($"{k.Value.Name} = \"{k.Value.GetStringValue().ToString()}\" ".PadRight(50) + scope);
                 }
 
                 return Task.FromResult(0);
@@ -119,19 +121,21 @@ namespace gsudo.Commands
 
                 if (reset)
                     setting.Reset(InputArguments.Global); // reset to default value
-                else 
+                else
                     setting.Save(unescapedValue, InputArguments.Global);
 
                 if (setting.Name == Settings.CacheMode.Name && unescapedValue.In(CredentialsCache.CacheMode.Disabled.ToString()))
                     new KillCacheCommand().Execute();
-                if (setting.Name.In (Settings.CacheDuration.Name, Settings.SecurityEnforceUacIsolation.Name))
+                if (setting.Name.In(Settings.CacheDuration.Name, Settings.SecurityEnforceUacIsolation.Name))
                     new KillCacheCommand().Execute();
             }
 
             // READ
             setting.ClearRunningValue();
-            Console.WriteLine($"{setting.Name} = \"{ setting.GetStringValue().ToString()}\"");
+            Console.WriteLine($"{setting.Name} = \"{setting.GetStringValue().ToString()}\"");
             return Task.FromResult(0);
         }
+
+
     }
 }

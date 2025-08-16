@@ -1,0 +1,56 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Build Debug",
+      "command": "dotnet",
+      "type": "process",
+      "args": ["build", "${workspaceFolder}/src/gsudo.sln", "--configuration", "Debug"],
+      "problemMatcher": "$msCompile",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "detail": "Build with Debug configuration"
+    },
+    {
+      "label": "Build Release",
+      "command": "dotnet",
+      "type": "process",
+      "args": ["build", "${workspaceFolder}/src/gsudo.sln", "--configuration", "Release", "--no-restore"],
+      "problemMatcher": "$msCompile",
+      "group": "build",
+      "detail": "Build with Release configuration"
+    },
+    {
+      "label": "Clean Debug",
+      "command": "dotnet",
+      "type": "process",
+      "args": ["clean", "${workspaceFolder}/src/gsudo.sln", "--configuration", "Debug"],
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "Clean Release",
+      "command": "dotnet",
+      "type": "process",
+      "args": ["clean", "${workspaceFolder}/src/gsudo.sln", "--configuration", "Release"],
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "Publish Release",
+      "command": "dotnet",
+      "type": "process",
+      "args": [
+        "publish",
+        "${workspaceFolder}/src/gsudo.sln",
+        "--configuration",
+        "Release",
+        "--no-build",
+        "--output",
+        "${workspaceFolder}/src/gsudo/bin/Release/publish"
+      ],
+      "problemMatcher": "$msCompile",
+      "dependsOn": "Build Release"
+    }
+  ]
+}

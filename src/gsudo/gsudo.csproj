@@ -1,63 +1,83 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <AssemblyVersion>1.2.0.0</AssemblyVersion>
-    <FileVersion>1.2.0.0</FileVersion>
-    <Version>1.2.0.0</Version>
-    <Deterministic>true</Deterministic>
-    <AssemblyName>UniGetUI Elevator</AssemblyName>
-    <Authors>Gerardo Grignoli, Martí Climent</Authors>
-    <Description>A tweaked version of GSudo designed to be used by UniGetUI</Description>
-    <Copyright>2021 Gerardo Grignoli for GSudo, 2025 Martí Climent for the modifications</Copyright>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageProjectUrl>https://github.com/marticliment/gsudo-for-UniGetUI</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/marticliment/gsudo-for-UniGetUI</RepositoryUrl>
-    <ApplicationIcon>icon.ico</ApplicationIcon>
-    
-    <RunPostBuildEvent>OnBuildSuccess</RunPostBuildEvent>
-    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
-    <NoWarn>1701;1702;CA1303;CA1707;CA1028;CA1001;CA1031;CA1416</NoWarn>
-    <OutputPath>bin\</OutputPath>
-    
-    <OutputType>Exe</OutputType>
-    <TargetFramework>net9.0</TargetFramework>
-    <SelfContained>true</SelfContained>
-    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
-    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <Target Name="ValidateConfiguration" BeforeTargets="BeforeBuild">
+        <Error Text="Invalid build configuration '$(Configuration)'. Valid values are 'Debug' or 'Release'." Condition="'$(Configuration)' != 'Debug' AND '$(Configuration)' != 'Release'" />
+    </Target>
 
-    <PublishSingleFile>true</PublishSingleFile>
+    <PropertyGroup>
+        <AssemblyVersion>1.2.0.0</AssemblyVersion>
+        <FileVersion>1.2.0.0</FileVersion>
+        <Version>1.2.0.0</Version>
+        <Deterministic>true</Deterministic>
+        <AssemblyName>UniGetUI Elevator</AssemblyName>
+        <Authors>Gerardo Grignoli, Martí Climent</Authors>
+        <Description>A tweaked version of GSudo designed to be used by UniGetUI</Description>
+        <Copyright>2021 Gerardo Grignoli for GSudo, 2025 Martí Climent for the modifications</Copyright>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <PackageProjectUrl>https://github.com/marticliment/gsudo-for-UniGetUI</PackageProjectUrl>
+        <RepositoryUrl>https://github.com/marticliment/gsudo-for-UniGetUI</RepositoryUrl>
+        <ApplicationIcon>icon.ico</ApplicationIcon>
 
-    <AutoGenerateBindingRedirects>False</AutoGenerateBindingRedirects>
-    <PublishTrimmed>true</PublishTrimmed>
-    <PublishAot>true</PublishAot>
-    <Optimize>true</Optimize>
-    <InvariantGlobalization>true</InvariantGlobalization>
-    <IlcOptimizationPreference>Size</IlcOptimizationPreference>
-    <IlcGenerateStackTraceData>true</IlcGenerateStackTraceData>
+        <RunPostBuildEvent>OnBuildSuccess</RunPostBuildEvent>
+        <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+        <NoWarn>1701;1702;CA1303;CA1707;CA1028;CA1001;CA1031;CA1416</NoWarn>
 
-    <DefineConstants>$(IntegrityOption)</DefineConstants>
-    
-  </PropertyGroup>
-  
-  <ItemGroup>
-    <PackageReference Include="Microsoft.Security.Extensions" Version="1.4.0" />
-    <PackageReference Include="System.Security.Principal.Windows" Version="5.0.0" />
-    <PackageReference Include="System.Threading.AccessControl" Version="6.0.0" />
-  </ItemGroup>
-    
-  <ItemGroup>
-    <Compile Remove="bin\**" />
-    <EmbeddedResource Remove="bin\**" />
-    <None Remove="bin\**" />
-  </ItemGroup>
-  
-  <ItemGroup>
-    <PackageReference Include="GitVersion.MsBuild" Version="5.6.11">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
-    <PackageReference Include="Microsoft.CodeAnalysis.FxCopAnalyzers" Version="2.9.7">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
-  </ItemGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net9.0</TargetFramework>
+        <SelfContained>true</SelfContained>
+        <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+        <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+
+        <AutoGenerateBindingRedirects>False</AutoGenerateBindingRedirects>
+        <DefineConstants>$(IntegrityOption)</DefineConstants>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+        <DebugType>portable</DebugType>
+        <DebugSymbols>true</DebugSymbols>
+        <PublishSingleFile>false</PublishSingleFile>
+        <PublishTrimmed>false</PublishTrimmed>
+        <PublishAot>false</PublishAot>
+        <Optimize>false</Optimize>
+        <DefineConstants>DEBUG;DISABLE_INTEGRITY;$(DefineConstants)</DefineConstants>
+        <!-- OutputPath>C:\Program Files\UniGetUI\Assets\Utilities\</OutputPath -->
+        <OutputPath>bin\Debug\</OutputPath>
+        <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+        <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+        <DebugType>pdbonly</DebugType>
+        <PublishSingleFile>true</PublishSingleFile>
+        <PublishTrimmed>true</PublishTrimmed>
+        <PublishAot>false</PublishAot>
+        <Optimize>true</Optimize>
+        <InvariantGlobalization>true</InvariantGlobalization>
+        <IlcOptimizationPreference>Size</IlcOptimizationPreference>
+        <IlcGenerateStackTraceData>true</IlcGenerateStackTraceData>
+        <OutputPath>bin\Release\</OutputPath>
+    </PropertyGroup>
+
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.Security.Extensions" Version="1.4.0" />
+        <PackageReference Include="System.Security.Principal.Windows" Version="5.0.0" />
+        <PackageReference Include="System.Threading.AccessControl" Version="6.0.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Compile Remove="bin\**" />
+        <EmbeddedResource Remove="bin\**" />
+        <None Remove="bin\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="GitVersion.MsBuild" Version="5.6.11">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+        <PackageReference Include="Microsoft.CodeAnalysis.FxCopAnalyzers" Version="2.9.7">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+    </ItemGroup>
 </Project>

@@ -5,5 +5,7 @@ namespace gsudo.Commands
     public interface ICommand
     {
         Task<int> Execute();
+
+        void CheckIntegrity();
     }
 }
