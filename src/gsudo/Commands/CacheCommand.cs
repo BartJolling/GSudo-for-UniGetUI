@@ -22,8 +22,6 @@ namespace gsudo.Commands
         public string AllowedSid { get; set; }
         public TimeSpan? CacheDuration { get; set; }
 
-        public void CheckIntegrity() { return; }
-
         public async Task<int> Execute()
         {
             if (!AllowedPid.HasValue)

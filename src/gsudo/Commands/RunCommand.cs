@@ -1,5 +1,4 @@
 ﻿using gsudo.Helpers;
-using gsudo.Integrity;
 using gsudo.Native;
 using gsudo.ProcessRenderers;
 using gsudo.Rpc;
@@ -21,17 +20,6 @@ namespace gsudo.Commands
         {
             UserCommand = commandToRun;
             commandBuilder = new CommandToRunBuilder(commandToRun);
-        }
-
-        public void CheckIntegrity()
-        {
-            //bool passingIntegrity = IntegrityHelpers.VerifyCallerProcess() is null;
-            bool passingIntegrity = IntegrityCheck.VerifyCallerProcess()?.Count == 0;
-
-            if (!passingIntegrity)
-            {
-                throw new ApplicationException("The Elevator was not called from a trusted process");
-            }
         }
 
         public async Task<int> Execute()
@@ -154,6 +142,11 @@ namespace gsudo.Commands
                 Logger.Instance.Log($"Process exited with code {exitCode}", LogLevel.Debug);
 
                 return exitCode;
+            }
+            catch (Exception ex)
+            {
+                Logger.Instance.Log(ex.Message, LogLevel.Error);
+                throw;
             }
             finally
             {

@@ -13,8 +13,6 @@ namespace gsudo.Commands
 
         public IEnumerable<string> value { get; set; }
 
-        public void CheckIntegrity() { return; }
-
         public Task<int> Execute()
         {
             RegistrySetting setting = null;

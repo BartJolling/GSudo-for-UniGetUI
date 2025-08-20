@@ -1,5 +1,6 @@
 ﻿using gsudo.Commands;
 using gsudo.Helpers;
+using gsudo.Logging;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -28,10 +29,24 @@ namespace gsudo
                 {
                     Logger.Instance.Log("Commandline does not contain and option or a verb", LogLevel.Debug);
                     return 0;
-                };
+                }
 
+                if (cmd is ServiceCommand svcCmd)
+                {
+                    // send logs to the parent process via named pipe, e.g. logs when integrity check fails
+                    Logger.Instance.RegisterSink(new BufferedPipeSink());
+                }
 #if !DISABLE_INTEGRITY
-                cmd.CheckIntegrity();
+                else
+                {
+                    // all commands do their integrity check here - ServiceCommand will do it after setting up the named pipe
+                    bool passingIntegrity = IntegrityCheck.VerifyCallerProcess()?.Count == 0;
+
+                    if (!passingIntegrity)
+                    {
+                        throw new ApplicationException("The Elevator was not called from a trusted process");
+                    }
+                }
 #endif
 
                 return await cmd.Execute().ConfigureAwait(false);

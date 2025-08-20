@@ -39,6 +39,7 @@
         <PublishAot>false</PublishAot>
         <Optimize>false</Optimize>
         <DefineConstants>DEBUG;DISABLE_INTEGRITY;$(DefineConstants)</DefineConstants>
+        <DefineConstants>DEBUG;$(DefineConstants)</DefineConstants>
         <!-- OutputPath>C:\Program Files\UniGetUI\Assets\Utilities\</OutputPath -->
         <OutputPath>bin\Debug\</OutputPath>
         <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>

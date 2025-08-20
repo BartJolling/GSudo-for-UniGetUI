@@ -18,8 +18,6 @@ namespace gsudo.Commands
         public string Key { get; set; }
         public bool NoOutput { get; set; }
 
-        public void CheckIntegrity() { return; }
-
         public Task<int> Execute()
         {
             var status = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);

@@ -12,8 +12,6 @@ namespace gsudo.Commands
     {
         public string Pattern { get; internal set; }
 
-        public void CheckIntegrity() { return; }
-
         public Task<int> Execute()
         {
             if (ShellHelper.InvokingShell.In(Shell.PowerShell, Shell.PowerShellCore, Shell.PowerShellCore623BuggedGlobalInstall))

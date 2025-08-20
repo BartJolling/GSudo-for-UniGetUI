@@ -7,8 +7,6 @@ namespace gsudo.Commands
 {
     public class HelpCommand : ICommand
     {
-        public void CheckIntegrity() { return; }
-
         public virtual Task<int> Execute()
         {
             ShowHelp();

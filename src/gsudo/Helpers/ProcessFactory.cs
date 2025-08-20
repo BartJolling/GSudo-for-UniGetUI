@@ -16,7 +16,7 @@ namespace gsudo.Helpers
 {
     public static class ProcessFactory
     {
-        public static Process StartElevatedDetached(string filename, string arguments, bool hidden)
+        public static SafeProcessHandle StartElevatedDetached(string filename, string arguments, bool hidden)
         {
             Logger.Instance.Log($"Elevating process: {filename} {arguments}", LogLevel.Debug);
 
@@ -33,31 +33,65 @@ namespace gsudo.Helpers
             try
             {
                 process.Start();
-            }
-            catch (Win32Exception ex)
-            {
-                if (ex.NativeErrorCode == 1223)
-                    throw new ApplicationException("The operation was canceled by the user.");
+                return process.GetSafeProcessHandle(); // throws when something has interfered in the UAC elevation request
 
-                throw;
             }
-            return process;
+            catch (Win32Exception ex) when (ex.NativeErrorCode == 1223)
+            {
+                throw new ApplicationException("The operation was canceled by the user.", ex);
+            }
+            catch (Exception ex)
+            {
+                // For some reason, the process did not start or did not return a handle.
+                // Tools like AdminByRequest, BeyondTrust, ... inject a stub during elevation
+                // The process instance above points to that stub and is useless
+
+                Logger.Instance.Log($"Did not get a valid handle to the elevated process: {ex.Message}", LogLevel.Warning);
+
+                // See if we can compensate for the exception
+                // Find elevated child by name (exclude ourselve)
+                string exeName = Path.GetFileNameWithoutExtension(filename);
+                Process elevated = null;
+
+                foreach (var candidate in Process.GetProcessesByName(exeName))
+                {
+                    if (candidate.Id != Environment.ProcessId)
+                    {
+                        elevated = candidate;
+                        break;
+                    }
+                }
+
+                if (elevated is null)
+                {
+                    Logger.Instance.Log("Could not locate elevated process.", LogLevel.Warning);
+                    throw; // cannot compensate for the exception - rethrow it
+                }
+
+                Logger.Instance.Log($"Located the elevated process PID={elevated.Id}", LogLevel.Debug);
+
+                // UAC forbids a non-elevated process to get a full SafeProcessHandle to an elevated process
+                // Get and return a handle with only access to limited information
+                return elevated.GetLimitedInfoSafeProcessHandle();
+            }
         }
 
         public static Process StartRedirected(string fileName, string arguments, string startFolder)
         {
-            var process = new Process();
-            process.StartInfo = new ProcessStartInfo(fileName)
+            var process = new Process
             {
-                Arguments = arguments,
-                WorkingDirectory = startFolder,
-                CreateNoWindow = true,
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                RedirectStandardInput = true,
-                StandardOutputEncoding = Settings.Encoding,
-                StandardErrorEncoding = Settings.Encoding,
+                StartInfo = new ProcessStartInfo(fileName)
+                {
+                    Arguments = arguments,
+                    WorkingDirectory = startFolder,
+                    CreateNoWindow = true,
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    RedirectStandardInput = true,
+                    StandardOutputEncoding = Settings.Encoding,
+                    StandardErrorEncoding = Settings.Encoding,
+                }
             };
             process.Start();
             return process;
@@ -65,12 +99,14 @@ namespace gsudo.Helpers
 
         public static Process StartAttached(string filename, string arguments)
         {
-            Logger.Instance.Log($"Process Start: {filename} {arguments}", LogLevel.Debug    );
-            var process = new Process();
-            process.StartInfo = new ProcessStartInfo(filename)
+            Logger.Instance.Log($"Process Start: {filename} {arguments}", LogLevel.Debug);
+            var process = new Process
             {
-                Arguments = arguments,
-                UseShellExecute = false,
+                StartInfo = new ProcessStartInfo(filename)
+                {
+                    Arguments = arguments,
+                    UseShellExecute = false,
+                }
             };
             process.Start();
             return process;
@@ -78,24 +114,21 @@ namespace gsudo.Helpers
 
         public static Process StartDetached(string filename, string arguments, string startFolder, bool hidden = true)
         {
-            var process = new Process();
-            process.StartInfo = new ProcessStartInfo(filename)
+            var process = new Process
             {
-                Arguments = arguments,
-                UseShellExecute = true,
-                WorkingDirectory = startFolder,
+                StartInfo = new ProcessStartInfo(filename)
+                {
+                    Arguments = arguments,
+                    UseShellExecute = true,
+                    WorkingDirectory = startFolder,
+                    WindowStyle = hidden ? ProcessWindowStyle.Hidden : ProcessWindowStyle.Normal
+                }
             };
 
-            if (hidden)
-            {
-                process.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
-                process.Start();
-            }
-            else
-            {
-                process.StartInfo.WindowStyle = ProcessWindowStyle.Normal;
-                process.Start();
+            process.Start();
 
+            if (!hidden)
+            {
                 for (int i = 0; process.MainWindowHandle == IntPtr.Zero && i < 30; i++)
                     System.Threading.Thread.Sleep(10);
 
@@ -126,7 +159,7 @@ namespace gsudo.Helpers
                     CreateNoWindow = !InputArguments.Debug,
                 });
             }
-            catch(Win32Exception ex)
+            catch (Win32Exception ex)
             {
                 if (ex.NativeErrorCode == 1326)
                     throw new ApplicationException("The user name or password is incorrect.");

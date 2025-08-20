@@ -24,8 +24,6 @@ namespace gsudo.Commands
         private IRpcServer _server;
         private bool serviceAlreadyReplacedOnce;
 
-        public void CheckIntegrity() { return; }
-
         public override string ToString()
         {
             return $"ServiceCommand: " +
@@ -38,7 +36,6 @@ namespace gsudo.Commands
                    $"RpcServer={(_server != null ? _server.GetType().Name : "null")}, " +
                    $"ServiceAlreadyReplacedOnce={serviceAlreadyReplacedOnce}";
         }
-
 
         void EnableTimer()
         {
@@ -72,7 +69,7 @@ namespace gsudo.Commands
             {
                 Logger.Instance.Log("This service is not running with desired credentials. Starting a new service instance.", LogLevel.Info);
 #if DEBUG
-                await Task.Delay(2000);
+                await Task.Delay(2000).ConfigureAwait(false);
 #endif
                 ServiceHelper.StartService(AllowedPid, CacheDuration, AllowedSid, SingleUse);
                 return 0;

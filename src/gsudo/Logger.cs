@@ -1,8 +1,13 @@
-﻿using System;
+﻿using System.Collections.Generic;
+using System.Linq;
+using gsudo.Logging;
+
+#nullable enable
 
 namespace gsudo
 {
-    public enum LogLevel
+
+    internal enum LogLevel
     {
         All = 0,
         Debug = 1,
@@ -14,30 +19,33 @@ namespace gsudo
 
     class Logger
     {
-        public static readonly Logger Instance = new Logger();
+        public static readonly Logger Instance = new();
 
-        private Logger() { }
+        private readonly List<ILogSink> _sinks = [];
+
+        private Logger()
+        {
+            _sinks.Add(new ConsoleSink()); // Default sink
+        }
+
+        public void RegisterSink(ILogSink sink)
+        {
+            _sinks.Add(sink);
+        }
+
+        public T? GetSink<T>() where T : class, ILogSink
+        {
+            return _sinks.OfType<T>().FirstOrDefault();
+        }
 
         public void Log(string message, LogLevel level)
         {
-            try
+            foreach (var sink in _sinks)
             {
-                if (level >= Settings.LogLevel)
-                {
-                    Console.ForegroundColor = GetColor(level);
-                    Console.Error.WriteLine($"{level.ToString()}: {message}");
-                    Console.ResetColor();
-                }
+                sink.Log(message, level);
             }
-            catch { }
-        }
-
-        private static ConsoleColor GetColor(LogLevel level)
-        {
-            if (level <= LogLevel.Debug) return ConsoleColor.DarkGray;
-            if (level == LogLevel.Info) return ConsoleColor.Gray;
-            if (level == LogLevel.Warning) return ConsoleColor.Yellow;
-            return ConsoleColor.Red;    
         }
     }
 }
+
+#nullable disable

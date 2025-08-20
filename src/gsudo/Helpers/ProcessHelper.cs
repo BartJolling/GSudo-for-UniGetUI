@@ -64,7 +64,7 @@ namespace gsudo.Helpers
             // This is common in MSYS/git-bash/cygwin
             // Fallback to first process attached to the current console.
             var pids = ConsoleHelper.GetConsoleAttachedPids();
-            return Process.GetProcessById((int) pids[pids.Length - 1]);
+            return Process.GetProcessById((int)pids[pids.Length - 1]);
         }
 
         public static int GetCacheableRootProcessId(this Process process)
@@ -72,17 +72,17 @@ namespace gsudo.Helpers
             if (ShellHelper.InvokingShell.In(Shell.Bash, Shell.BusyBox))
             {
                 var parentId = GetParentProcessId(process);
-                if (parentId == 0) 
+                if (parentId == 0)
                     return process.Id;
 
                 try
                 {
                     var parentProcess = Process.GetProcessById(parentId);
-                    var parentProcessFileName = System.IO.Path.GetFileNameWithoutExtension(parentProcess.MainModule.FileName) ;
+                    var parentProcessFileName = System.IO.Path.GetFileNameWithoutExtension(parentProcess.MainModule.FileName);
                     if (parentProcessFileName.In("BASH", "ASH", "SH", "BUSYBOX", "BUSYBOX64"))
                     {
                         var grandparentFileName = System.IO.Path.GetFileNameWithoutExtension(GetParentProcess(parentProcess).MainModule.FileName);
-                        if (!grandparentFileName.Equals(parentProcessFileName, StringComparison.OrdinalIgnoreCase)) 
+                        if (!grandparentFileName.Equals(parentProcessFileName, StringComparison.OrdinalIgnoreCase))
                         {
                             return parentId;
                         }
@@ -118,7 +118,7 @@ namespace gsudo.Helpers
                 }
                 p = null;
             }
-        
+
             return pid;
         }
 
@@ -227,10 +227,20 @@ namespace gsudo.Helpers
                 SafeWaitHandle = new SafeWaitHandle(processHandle, ownsHandle: false)
             };
 
-        public static SafeProcessHandle GetSafeProcessHandle(this Process p) => new SafeProcessHandle(p.Handle, true);
+        public static SafeProcessHandle GetSafeProcessHandle(this Process p) => new(p.Handle, true);
+
+        public static SafeProcessHandle GetLimitedInfoSafeProcessHandle(this Process p)
+        {
+            var desiredAccess = PROCESS_QUERY_LIMITED_INFORMATION | SYNCHRONIZE;
+            var handle = OpenProcess(desiredAccess, false, (uint)p.Id);
+
+            if (handle == IntPtr.Zero) return null;
+
+            return new SafeProcessHandle(handle, ownsHandle: true);
+        }
 
         public static AutoResetEvent GetProcessWaitHandle(this SafeProcessHandle processHandle) =>
-            new AutoResetEvent(false)
+            new(false)
             {
                 SafeWaitHandle = new SafeWaitHandle(processHandle.DangerousGetHandle(), ownsHandle: false)
             };
