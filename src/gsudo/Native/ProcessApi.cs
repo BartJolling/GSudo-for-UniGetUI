@@ -125,6 +125,9 @@ namespace gsudo.Native
         [DllImport("kernel32.dll", CharSet = System.Runtime.InteropServices.CharSet.Auto, SetLastError = true)]
         internal static extern bool GetExitCodeProcess(Microsoft.Win32.SafeHandles.SafeProcessHandle processHandle, out int exitCode);
 
+        [DllImport("kernel32.dll", SetLastError = true)][return: MarshalAs(UnmanagedType.Bool)]
+        internal static extern bool GetExitCodeProcess(IntPtr hProcess, out uint lpExitCode);
+
         [DllImport("kernel32.dll", SetLastError = true)]
         internal static extern bool GetNamedPipeClientProcessId(IntPtr Pipe, out uint ClientProcessId);
 
@@ -188,6 +191,8 @@ namespace gsudo.Native
         #endregion
 
         #region Query Process Info
+        public const UInt32 SYNCHRONIZE = 0x00100000;
+        public const UInt32 PROCESS_QUERY_LIMITED_INFORMATION = 0x1000;
         public const UInt32 PROCESS_QUERY_INFORMATION = 0x0400;
         public const UInt32 PROCESS_SET_INFORMATION = 0x0200;
 
@@ -201,10 +206,10 @@ namespace gsudo.Native
         /// <summary>Checks whether a process is being debugged.</summary>
         /// <remarks>
         /// The "remote" in CheckRemoteDebuggerPresent does not imply that the debugger
-        /// necessarily resides on a different computer; instead, it indicates that the 
+        /// necessarily resides on a different computer; instead, it indicates that the
         /// debugger resides in a separate and parallel process.
         /// <para/>
-        /// Use the IsDebuggerPresent function to detect whether the calling process 
+        /// Use the IsDebuggerPresent function to detect whether the calling process
         /// is running under the debugger.
         /// </remarks>
         [DllImport("Kernel32.dll", SetLastError = true, ExactSpelling = true)]

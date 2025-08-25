@@ -1,4 +1,5 @@
 ﻿using gsudo.Helpers;
+using gsudo.Logging;
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -75,8 +76,8 @@ namespace gsudo.Rpc
             var networkSid = new SecurityIdentifier("S-1-5-2");
             // deny remote connections.
             ps.AddAccessRule(new PipeAccessRule(
-                networkSid, 
-                PipeAccessRights.FullControl, 
+                networkSid,
+                PipeAccessRights.FullControl,
                 System.Security.AccessControl.AccessControlType.Deny));
 
             bool isHighIntegrity = SecurityHelper.IsHighIntegrity();
@@ -85,8 +86,9 @@ namespace gsudo.Rpc
             Logger.Instance.Log($"Listening on named pipe {pipeName}.", LogLevel.Debug);
 
             Logger.Instance.Log($"Access allowed only for ProcessID {_allowedPid} and children", LogLevel.Debug);
+            Logger.Instance.Log($"ProcessID {_allowedPid}: {ProcessHelper.GetExeNameFromSnapshot(_allowedPid)}", LogLevel.Debug);
 
-            if (_allowedPid>0)
+            if (_allowedPid > 0)
                 _ = Task.Factory.StartNew(CancelIfAllowedProcessEnds, _cancellationTokenSource.Token,
                     TaskCreationOptions.LongRunning, TaskScheduler.Current);
 
@@ -122,15 +124,40 @@ namespace gsudo.Rpc
 
                             ConnectionKeepAliveThread.Start(connection);
 
+                            // Send all Logger.Instance.Log messages over the control pipe
+                            Logger.Instance.Log("Attaching BufferedPipeSink from Logger", LogLevel.Debug);
+                            var logPipeSink = Logger.Instance.GetSink<BufferedPipeSink>();
+                            logPipeSink?.AttachPipe(controlPipe);
+
                             Logger.Instance.Log("Incoming Connection.", LogLevel.Info);
 
                             var clientPid = dataPipe.GetClientProcessId();
+
+#if !DISABLE_INTEGRITY
+                            var PassingIntegrity = IntegrityCheck.VerifyCallerProcess().Count == 0;
+
+                            if (!PassingIntegrity)
+                            {
+                                Logger.Instance.Log($"The Elevator was not called from a trusted process", LogLevel.Error);
+
+                                await controlPipe.WriteAsync($"{Constants.TOKEN_ERROR}Unauthorized. The Elevator was not called from a trusted process.{Constants.TOKEN_ERROR}").ConfigureAwait(false);
+                                await controlPipe.FlushAsync().ConfigureAwait(false);
+
+                                controlPipe.WaitForPipeDrain();
+
+                                dataPipe.Disconnect();
+                                controlPipe.Disconnect();
+
+                                // kill the server.
+                                return;
+                            }
+#endif
 
                             if (!IsAuthorized(clientPid, _allowedPid))
                             {
                                 Logger.Instance.Log($"Unauthorized access from PID {clientPid}", LogLevel.Warning);
 
-                                await controlPipe.WriteAsync($"{Constants.TOKEN_ERROR}Unauthorized. (Different gsudo.exe?) {Constants.TOKEN_ERROR}").ConfigureAwait(false);
+                                await controlPipe.WriteAsync($"{Constants.TOKEN_ERROR}Unauthorized. Connected to a different gsudo.exe instance? {Constants.TOKEN_ERROR}").ConfigureAwait(false);
                                 await controlPipe.FlushAsync().ConfigureAwait(false);
 
                                 controlPipe.WaitForPipeDrain();
@@ -179,7 +206,7 @@ namespace gsudo.Rpc
                 // not much to protect.
                 return true;
             }
-            
+
             clientProcessMainModule = clientProcess.MainModule;
 
             if (_allowedExeLength != -1)
@@ -199,12 +226,12 @@ namespace gsudo.Rpc
                         LogLevel.Error);
                     return false;
                 }
-            }            
+            }
 #if !DEBUG
-            if (clientProcessMainModule != null) 
+            if (clientProcessMainModule != null)
             {
                 // Check if a malicious process is attached to the client. Results are only valid if we are elevated and the malicious process is not.
-                // But still a futile attempt since the user can Attach, 
+                // But still a futile attempt since the user can Attach,
 
                 bool isDebuggerAttached = false;
                 if (!Native.ProcessApi.CheckRemoteDebuggerPresent(clientProcess.SafeHandle, ref isDebuggerAttached) || isDebuggerAttached)
@@ -220,7 +247,7 @@ namespace gsudo.Rpc
             // TODO: Decide if I want to allow all children and grandsons, or only direct children.
             // It's trivial on Windows to fake a your parent PID.
             // So this "security" check is easily avoidable for advanced hackers.
-            
+
             // Only allow direct child.
             /*
             clientPid = ProcessHelper.GetParentProcessIdExcludingShim(clientPid);

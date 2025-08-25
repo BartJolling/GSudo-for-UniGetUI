@@ -1,6 +1,8 @@
 ﻿using gsudo.Commands;
 using gsudo.Helpers;
+using gsudo.Logging;
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace gsudo
@@ -17,43 +19,40 @@ namespace gsudo
         {
             ICommand cmd = null;
 
-
-#if !DEBUG || !DISABLE_INTEGRITY
-            bool PassingIntegrity = IntegrityHelpers.VerifyCallerProcess();
-            if (!PassingIntegrity)
-            {
-                Logger.Instance.Log("The Elevator was not called from a trusted process", LogLevel.Error); // one liner errors.
-                return -1;
-            }
-#endif
-
-            var commandLine = ArgumentsHelper.GetRealCommandLine();
-            var args = ArgumentsHelper.SplitArgs(commandLine);
-
             try
             {
-                try
+                var commandLine = ArgumentsHelper.GetRealCommandLine();
+                var args = ArgumentsHelper.SplitArgs(commandLine);
+                cmd = new CommandLineParser(args).Parse();
+
+                if (cmd is null)
                 {
-                    cmd = new CommandLineParser(args).Parse();
-                }
-                finally
-                {
-                    Logger.Instance.Log($"Command Line: {commandLine}", LogLevel.Debug);
+                    Logger.Instance.Log("Commandline does not contain and option or a verb", LogLevel.Debug);
+                    return 0;
                 }
 
-                if (cmd != null)
+                if (cmd is ServiceCommand svcCmd)
                 {
-                    try
+                    // send logs to the parent process via named pipe, e.g. logs when integrity check fails
+                    Logger.Instance.RegisterSink(new BufferedPipeSink(svcCmd.SingleUse));
+
+                    Logger.Instance.Log(svcCmd.ToString(), LogLevel.Debug);
+                }
+#if !DISABLE_INTEGRITY
+                else
+                {
+                    // all commands do their integrity check here - ServiceCommand will do it after setting up the named pipe
+                    bool passingIntegrity = IntegrityCheck.VerifyCallerProcess()?.Count == 0;
+
+                    if (!passingIntegrity)
                     {
-                        return await cmd.Execute().ConfigureAwait(false);
-                    }
-                    finally
-                    {
-                        (cmd as IDisposable)?.Dispose();
+                        throw new ApplicationException("The Elevator was not called from a trusted process");
                     }
                 }
+#endif
 
-                return 0;
+                return await cmd.Execute().ConfigureAwait(false);
+
             }
             catch (ApplicationException ex)
             {
@@ -67,6 +66,8 @@ namespace gsudo
             }
             finally
             {
+                (cmd as IDisposable)?.Dispose();
+
                 if (InputArguments.KillCache)
                 {
                     await new KillCacheCommand(verbose: false).Execute().ConfigureAwait(false);
@@ -79,18 +80,13 @@ namespace gsudo
                     Console.ResetColor();
                     await Task.Delay(1).ConfigureAwait(false); // force reset color on WSL.
 
-                    if (InputArguments.Debug && !Console.IsInputRedirected)
+                    if (InputArguments.Debug && !Console.IsInputRedirected && cmd?.GetType() == typeof(ServiceCommand))
                     {
-                        if (cmd.GetType() == typeof(ServiceCommand))
-                        {
-                            Console.WriteLine("Service shutdown. This window will close in 10 seconds");
-                            System.Threading.Thread.Sleep(10000);
-                        }
+                        Console.WriteLine("Service shutdown. This window will close in 10 seconds");
+                        Thread.Sleep(10000);
                     }
                 }
-                catch
-                {
-                }
+                catch { }
             }
         }
     }

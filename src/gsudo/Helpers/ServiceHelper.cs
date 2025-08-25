@@ -124,8 +124,8 @@ namespace gsudo.Helpers
         {
             var currentSid = WindowsIdentity.GetCurrent().User.Value;
 
-            allowedPid = allowedPid ?? Process.GetCurrentProcess().GetCacheableRootProcessId();
-            allowedSid = allowedSid ?? Process.GetProcessById(allowedPid.Value)?.GetProcessUser()?.User?.Value ?? currentSid;
+            allowedPid ??= Process.GetCurrentProcess().GetCacheableRootProcessId();
+            allowedSid ??= Process.GetProcessById(allowedPid.Value)?.GetProcessUser()?.User?.Value ?? currentSid;
 
             string verb;
             SafeProcessHandle ret;
@@ -187,14 +187,14 @@ namespace gsudo.Helpers
                 else
                 {
                     if (SecurityHelper.IsMemberOfLocalAdmins() && InputArguments.IntegrityLevel >= IntegrityLevel.High)
-                        ret = ProcessFactory.StartElevatedDetached(ownExe, commandLine, !InputArguments.Debug).GetSafeProcessHandle();
+                        ret = ProcessFactory.StartElevatedDetached(ownExe, commandLine, !InputArguments.Debug);
                     else
                         ret = ProcessFactory.StartDetached(ownExe, commandLine, null, !InputArguments.Debug).GetSafeProcessHandle();
                 }
             }
             else
             {
-                ret = ProcessFactory.StartElevatedDetached(ownExe, commandLine, !InputArguments.Debug).GetSafeProcessHandle();
+                ret = ProcessFactory.StartElevatedDetached(ownExe, commandLine, !InputArguments.Debug);
             }
 
             Logger.Instance.Log("Service process started.", LogLevel.Debug);
@@ -236,4 +236,3 @@ namespace gsudo.Helpers
         }
     }
 }
-

@@ -4,8 +4,6 @@ using System.Threading;
 using System.IO;
 using gsudo.Rpc;
 using gsudo.ProcessHosts;
-using System.Runtime.Serialization.Formatters.Binary;
-using System.Linq;
 using gsudo.Helpers;
 using gsudo.CredentialsCache;
 #if NETCOREAPP
@@ -26,9 +24,22 @@ namespace gsudo.Commands
         private IRpcServer _server;
         private bool serviceAlreadyReplacedOnce;
 
+        public override string ToString()
+        {
+            return $"ServiceCommand: " +
+                   $"AllowedPid={AllowedPid}, " +
+                   $"AllowedSid='{AllowedSid}', " +
+                   $"LogLvl={(LogLvl.HasValue ? LogLvl.Value.ToString() : "null")}, " +
+                   $"CacheDuration={CacheDuration}, " +
+                   $"SingleUse={SingleUse}, " +
+                   $"ShutdownTimer={(ShutdownTimer != null ? "set" : "null")}, " +
+                   $"RpcServer={(_server != null ? _server.GetType().Name : "null")}, " +
+                   $"ServiceAlreadyReplacedOnce={serviceAlreadyReplacedOnce}";
+        }
+
         void EnableTimer()
         {
-            if (CacheDuration != TimeSpan.MaxValue) 
+            if (CacheDuration != TimeSpan.MaxValue)
                 ShutdownTimer.Change((int)CacheDuration.TotalMilliseconds, Timeout.Infinite);
         }
 
@@ -52,13 +63,13 @@ namespace gsudo.Commands
             /*
             if ((InputArguments.TrustedInstaller && !System.Security.Principal.WindowsIdentity.GetCurrent().Claims.Any(c => c.Value == Constants.TI_SID))
                 || (InputArguments.RunAsSystem && !System.Security.Principal.WindowsIdentity.GetCurrent().IsSystem)
-                || (InputArguments.UserName != null && !SecurityHelper.IsAdministrator() && SecurityHelper.IsMemberOfLocalAdmins()) 
+                || (InputArguments.UserName != null && !SecurityHelper.IsAdministrator() && SecurityHelper.IsMemberOfLocalAdmins())
                 )*/
             if (!RunCommand.IsRunningAsDesiredUser())
             {
                 Logger.Instance.Log("This service is not running with desired credentials. Starting a new service instance.", LogLevel.Info);
 #if DEBUG
-                await Task.Delay(2000);
+                await Task.Delay(2000).ConfigureAwait(false);
 #endif
                 ServiceHelper.StartService(AllowedPid, CacheDuration, AllowedSid, SingleUse);
                 return 0;
@@ -162,9 +173,9 @@ namespace gsudo.Commands
             byte[] inBuffer = new byte[dataSizeInt];
 
             var bytesRemaining = dataSizeInt;
-            while (bytesRemaining > 0 )
+            while (bytesRemaining > 0)
                 bytesRemaining -= await dataPipe.ReadAsync(inBuffer, 0, bytesRemaining).ConfigureAwait(false);
-            
+
             Logger.Instance.Log($"ElevationRequest length {dataSizeInt}", LogLevel.Debug);
 
 #if NETFRAMEWORK
