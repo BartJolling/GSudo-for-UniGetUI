@@ -10,6 +10,7 @@
         internal const string TOKEN_KEY_CTRLBREAK = "\u0015";
         internal const string TOKEN_SUCCESS = "\u0016";
         internal const string TOKEN_EOF = "\u0017";
+        internal const string TOKEN_LOG = "\u0018";
         internal const int GSUDO_ERROR_EXITCODE = 999;
         internal const string TI_SID = "S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464";
     }

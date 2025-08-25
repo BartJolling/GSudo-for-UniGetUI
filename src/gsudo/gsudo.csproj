@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-    <Target Name="ValidateConfiguration" BeforeTargets="BeforeBuild">
-        <Error Text="Invalid build configuration '$(Configuration)'. Valid values are 'Debug' or 'Release'." Condition="'$(Configuration)' != 'Debug' AND '$(Configuration)' != 'Release'" />
-    </Target>
+    <PropertyGroup>
+        <Configurations>Debug;DebugAppFolder;Release</Configurations>
+    </PropertyGroup>
 
     <PropertyGroup>
         <AssemblyVersion>1.2.0.0</AssemblyVersion>
@@ -31,6 +31,7 @@
         <DefineConstants>$(IntegrityOption)</DefineConstants>
     </PropertyGroup>
 
+    <!-- Standard Debug configuration -->
     <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
         <DebugType>portable</DebugType>
         <DebugSymbols>true</DebugSymbols>
@@ -39,9 +40,21 @@
         <PublishAot>false</PublishAot>
         <Optimize>false</Optimize>
         <DefineConstants>DEBUG;DISABLE_INTEGRITY;$(DefineConstants)</DefineConstants>
-        <DefineConstants>DEBUG;$(DefineConstants)</DefineConstants>
-        <!-- OutputPath>C:\Program Files\UniGetUI\Assets\Utilities\</OutputPath -->
         <OutputPath>bin\Debug\</OutputPath>
+        <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+        <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+    </PropertyGroup>
+
+    <!-- DebugAppFolder configuration for output to Program Files -->
+    <PropertyGroup Condition="'$(Configuration)' == 'DebugUnigetFolder'">
+        <DebugType>portable</DebugType>
+        <DebugSymbols>true</DebugSymbols>
+        <PublishSingleFile>false</PublishSingleFile>
+        <PublishTrimmed>false</PublishTrimmed>
+        <PublishAot>false</PublishAot>
+        <Optimize>false</Optimize>
+        <DefineConstants>DEBUG;$(DefineConstants)</DefineConstants>
+        <OutputPath>C:\Program Files\UniGetUI\Assets\Utilities\</OutputPath>
         <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
         <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
     </PropertyGroup>

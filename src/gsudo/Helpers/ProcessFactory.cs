@@ -46,7 +46,7 @@ namespace gsudo.Helpers
                 // Tools like AdminByRequest, BeyondTrust, ... inject a stub during elevation
                 // The process instance above points to that stub and is useless
 
-                Logger.Instance.Log($"Did not get a valid handle to the elevated process: {ex.Message}", LogLevel.Warning);
+                Logger.Instance.Log($"StartElevatedDetached did not get a valid handle to the elevated process: {ex.Message}", LogLevel.Warning);
 
                 // See if we can compensate for the exception
                 // Find elevated child by name (exclude ourselve)
@@ -64,11 +64,11 @@ namespace gsudo.Helpers
 
                 if (elevated is null)
                 {
-                    Logger.Instance.Log("Could not locate elevated process.", LogLevel.Warning);
+                    Logger.Instance.Log($"StartElevatedDetached could not find the elevated '{exeName}' process.", LogLevel.Warning);
                     throw; // cannot compensate for the exception - rethrow it
                 }
 
-                Logger.Instance.Log($"Located the elevated process PID={elevated.Id}", LogLevel.Debug);
+                Logger.Instance.Log($"StartElevatedDetached found the elevated '{exeName}' process with PID={elevated.Id}", LogLevel.Debug);
 
                 // UAC forbids a non-elevated process to get a full SafeProcessHandle to an elevated process
                 // Get and return a handle with only access to limited information

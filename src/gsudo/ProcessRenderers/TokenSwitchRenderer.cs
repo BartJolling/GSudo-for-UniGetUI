@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 namespace gsudo.ProcessRenderers
 {
     /// <summary>
-    /// This renderer starts the process in suspended status, and the TokenSwitchHost 
+    /// This renderer starts the process in suspended status, and the TokenSwitchHost
     /// (running on the elevated gsudo instance) will apply a different token to it.
     /// </summary>
     class TokenSwitchRenderer : IProcessRenderer
@@ -43,7 +43,7 @@ namespace gsudo.ProcessRenderers
             {
                 // Now, we have an issue with this method: The process launched with the new token throws Access Denied if it tries to read its own token.
                 // Kind of dirty workaround is to wrap the call with a "CMD.exe /c ".. this intermediate process will then
-                // launching the command with a fresh new (desired) token and we know cmd wont try to read it's substitute token (throwing Access Denied).  
+                // launching the command with a fresh new (desired) token and we know cmd wont try to read it's substitute token (throwing Access Denied).
 
                 exeName = Environment.GetEnvironmentVariable("COMSPEC");
                 args = $"/s /c \"{elevationRequest.FileName} {elevationRequest.Arguments}\"";
@@ -125,11 +125,11 @@ namespace gsudo.ProcessRenderers
         }
 
 
-        enum Mode { Normal, Error};
+        enum Mode { Normal, Error, Log };
         Mode CurrentMode = Mode.Normal;
 
-        static readonly string[] TOKENS = new string[] { "\0", Constants.TOKEN_ERROR, Constants.TOKEN_SUCCESS };
-        
+        static readonly string[] TOKENS = ["\0", Constants.TOKEN_ERROR, Constants.TOKEN_SUCCESS, Constants.TOKEN_LOG];
+
         private async Task HandleControlStream(string s)
         {
             Action<Mode> Toggle = (m) => CurrentMode = CurrentMode == Mode.Normal ? m : Mode.Normal;
@@ -141,14 +141,16 @@ namespace gsudo.ProcessRenderers
                 var token = tokens.Pop();
 
                 if (token == "\0") continue; // session keep alive
+
                 if (token == Constants.TOKEN_SUCCESS)
                 {
                     tokenSwitchSuccessEvent.Set();
                     continue;
                 }
+
                 if (token == Constants.TOKEN_ERROR)
                 {
-                    //fix intercalation of messages;
+                    // fix intercalation of messages
                     await Console.Error.FlushAsync().ConfigureAwait(false);
                     await Console.Out.FlushAsync().ConfigureAwait(false);
 
@@ -156,6 +158,14 @@ namespace gsudo.ProcessRenderers
                     Console.ResetColor();
                     continue;
                 }
+
+                if (token == Constants.TOKEN_LOG)
+                {
+                    Toggle(Mode.Log);
+                    Console.ResetColor();
+                    continue;
+                }
+
                 if (CurrentMode == Mode.Error)
                 {
                     Console.ForegroundColor = ConsoleColor.Red;
@@ -164,9 +174,17 @@ namespace gsudo.ProcessRenderers
                     continue;
                 }
 
+                if (CurrentMode == Mode.Log)
+                {
+                    Console.ForegroundColor = ConsoleColor.DarkGray;
+                    Console.Write(token);
+                    Console.ResetColor();
+                    continue;
+                }
+
+                // default (Mode.Normal)
                 Console.Write(token);
             }
         }
-
     }
 }

@@ -13,7 +13,7 @@ public class HelperDllRule(string dllPath, string expectedHash) : IValidationRul
     {
         if (!File.Exists(_dllPath))
         {
-            return new ValidationFailed(nameof(HelperDllRule), "W_HELPER_DLL_NOT_FOUND",
+            return new ValidationFail(nameof(HelperDllRule), "W_HELPER_DLL_NOT_FOUND",
                 $"Could not find \"{_dllPath}\".");
         }
 
@@ -24,7 +24,7 @@ public class HelperDllRule(string dllPath, string expectedHash) : IValidationRul
 
         if (hashString != _expectedHash)
         {
-            return new ValidationFailed(nameof(HelperDllRule), "W_HELPER_DLL_HASH_MISMATCH",
+            return new ValidationFail(nameof(HelperDllRule), "W_HELPER_DLL_HASH_MISMATCH",
                 $"Hash mismatch for \"{_dllPath}\". Expected \"{_expectedHash}\", got \"{hashString}\".");
         }
 

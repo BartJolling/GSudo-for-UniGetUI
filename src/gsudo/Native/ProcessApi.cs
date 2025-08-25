@@ -125,6 +125,9 @@ namespace gsudo.Native
         [DllImport("kernel32.dll", CharSet = System.Runtime.InteropServices.CharSet.Auto, SetLastError = true)]
         internal static extern bool GetExitCodeProcess(Microsoft.Win32.SafeHandles.SafeProcessHandle processHandle, out int exitCode);
 
+        [DllImport("kernel32.dll", SetLastError = true)][return: MarshalAs(UnmanagedType.Bool)]
+        internal static extern bool GetExitCodeProcess(IntPtr hProcess, out uint lpExitCode);
+
         [DllImport("kernel32.dll", SetLastError = true)]
         internal static extern bool GetNamedPipeClientProcessId(IntPtr Pipe, out uint ClientProcessId);
 

@@ -14,43 +14,12 @@
       "detail": "Build with Debug configuration"
     },
     {
-      "label": "Build Release",
+      "label": "Build DebugUnigetFolder",
       "command": "dotnet",
       "type": "process",
-      "args": ["build", "${workspaceFolder}/src/gsudo.sln", "--configuration", "Release", "--no-restore"],
+      "args": ["build", "${workspaceFolder}/src/gsudo.sln", "--configuration", "DebugUnigetFolder"],
       "problemMatcher": "$msCompile",
-      "group": "build",
-      "detail": "Build with Release configuration"
-    },
-    {
-      "label": "Clean Debug",
-      "command": "dotnet",
-      "type": "process",
-      "args": ["clean", "${workspaceFolder}/src/gsudo.sln", "--configuration", "Debug"],
-      "problemMatcher": "$msCompile"
-    },
-    {
-      "label": "Clean Release",
-      "command": "dotnet",
-      "type": "process",
-      "args": ["clean", "${workspaceFolder}/src/gsudo.sln", "--configuration", "Release"],
-      "problemMatcher": "$msCompile"
-    },
-    {
-      "label": "Publish Release",
-      "command": "dotnet",
-      "type": "process",
-      "args": [
-        "publish",
-        "${workspaceFolder}/src/gsudo.sln",
-        "--configuration",
-        "Release",
-        "--no-build",
-        "--output",
-        "${workspaceFolder}/src/gsudo/bin/Release/publish"
-      ],
-      "problemMatcher": "$msCompile",
-      "dependsOn": "Build Release"
+      "detail": "Builds to C:\\Program Files\\UnigetFolder\\Assets\\Utilities"
     }
   ]
 }

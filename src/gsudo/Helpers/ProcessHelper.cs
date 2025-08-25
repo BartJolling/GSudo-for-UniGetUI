@@ -12,25 +12,92 @@ namespace gsudo.Helpers
 {
     internal static class ProcessHelper
     {
+        private static readonly SafeSnapshotHandle _processSnapshot = CreateToolhelp32Snapshot(SnapshotFlags.Process, 0);
+
+        static ProcessHelper()
+        {
+            AppDomain.CurrentDomain.ProcessExit += (s, e) => _processSnapshot?.Dispose();
+        }
+
         private static string _cacheOwnExeName;
 
         public static string GetOwnExeName()
         {
             if (_cacheOwnExeName != null)
                 return _cacheOwnExeName;
-            return _cacheOwnExeName = SymbolicLinkSupport.ResolveSymbolicLink(System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName);
+            return _cacheOwnExeName = SymbolicLinkSupport.ResolveSymbolicLink(Environment.ProcessPath);
         }
 
         public static string GetExeName(this Process process)
         {
-            var exeName = string.Empty;
+            if (process == null) return string.Empty;
+
+            if (process.HasExited)
+                return GetExeNameFromSnapshot(process.Id) ?? process.ProcessName;
+
             try
             {
-                exeName = process.ProcessName;
-                exeName = process.MainModule?.FileName ?? exeName;
+                var exeName = process.MainModule?.FileName;
+                if (!string.IsNullOrEmpty(exeName))
+                {
+                    Logger.Instance.Log($"[From MainModule] {exeName}", LogLevel.Debug);
+                    return exeName;
+                }
+
+                // fallback to ProcessName
+                Logger.Instance.Log($"[From Process] {process.ProcessName}", LogLevel.Debug);
+                return process.ProcessName;
             }
-            catch { }
-            return exeName;
+            catch
+            {
+                // fallback to snapshot
+                Logger.Instance.Log($"[From Snapshot] {GetExeNameFromSnapshot(process.Id)}", LogLevel.Debug);
+                return GetExeNameFromSnapshot(process.Id);
+            }
+        }
+
+        public static string GetExeNameFromSnapshot(int processId)
+        {
+            if (_processSnapshot is null || _processSnapshot.IsInvalid)
+                return string.Empty;
+
+            PROCESSENTRY32 procEntry = new()
+            {
+                dwSize = (uint)Marshal.SizeOf<PROCESSENTRY32>()
+            };
+
+            if (Process32First(_processSnapshot, ref procEntry))
+            {
+                do
+                {
+                    if (procEntry.th32ProcessID == processId)
+                    {
+                        return procEntry.szExeFile;
+                    }
+                } while (Process32Next(_processSnapshot, ref procEntry));
+            }
+
+            return string.Empty;
+        }
+
+        /// <summary>
+        /// Checks if given process is still alive
+        /// </summary>
+        /// <param name="processId">process id</param>
+        /// <returns>true if process is alive, false if not</returns>
+        static public bool IsProcessAlive(int processId)
+        {
+            const uint STILL_ACTIVE = 259;
+
+            IntPtr h = OpenProcess(PROCESS_QUERY_INFORMATION, true, (uint)processId);
+
+            if (h == IntPtr.Zero)
+                return false;
+
+            bool success = GetExitCodeProcess(h, out uint code);
+            CloseHandle(h);
+
+            return success && code == STILL_ACTIVE;
         }
 
         public static WindowsIdentity GetProcessUser(this Process process)
@@ -182,9 +249,8 @@ namespace gsudo.Helpers
             if (hProcess == IntPtr.Zero) return 0;
 
             var pbi = new NtDllApi.PROCESS_BASIC_INFORMATION();
-            int returnLength;
 
-            if (NtDllApi.NativeMethods.NtQueryInformationProcess(hProcess, 0, ref pbi, Marshal.SizeOf(pbi), out returnLength) != 0)
+            if (NtDllApi.NativeMethods.NtQueryInformationProcess(hProcess, 0, ref pbi, Marshal.SizeOf(pbi), out _) != 0)
                 return 0;
 
             return (int)pbi.InheritedFromUniqueProcessId;

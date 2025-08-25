@@ -4,11 +4,12 @@ using System.IO.Pipes;
 
 namespace gsudo.Logging;
 
-class BufferedPipeSink : ILogSink
+internal class BufferedPipeSink(bool SingleUse) : ILogSink
 {
     private readonly List<(string, LogLevel)> _buffer = [];
     private NamedPipeServerStream _pipeStream;
     private StreamWriter _pipeWriter;
+    private readonly string _marker = SingleUse ? "Elevated" : "Service";
 
     public void Log(string message, LogLevel level)
     {
@@ -16,7 +17,7 @@ class BufferedPipeSink : ILogSink
 
         if (_pipeStream?.IsConnected == true)
         {
-            _pipeWriter.WriteLine($"{Constants.TOKEN_ERROR}[Elevated]{level}: {message}{Constants.TOKEN_ERROR}");
+            WriteToPipe(message, level);
         }
         else
         {
@@ -28,8 +29,8 @@ class BufferedPipeSink : ILogSink
     {
         if (controlPipe is null || !controlPipe.IsConnected)
         {
-            Logger.Instance.Log("BufferedPipeSink did not receive a stream to a opened named pipe", LogLevel.Warning);
-            return; // let's not block
+            Logger.Instance.Log("BufferedPipeSink did not receive a stream to an opened named pipe", LogLevel.Warning);
+            return; // don't block
         }
 
         _pipeStream = controlPipe;
@@ -37,8 +38,19 @@ class BufferedPipeSink : ILogSink
 
         foreach (var (msg, level) in _buffer)
         {
-            _pipeWriter.WriteLine($"{Constants.TOKEN_ERROR}[Elevated]{level}: {msg}{Constants.TOKEN_ERROR}");
+            WriteToPipe(msg, level);
         }
         _buffer.Clear();
+    }
+
+    private void WriteToPipe(string message, LogLevel level)
+    {
+        if (_pipeWriter == null) return;
+
+        string token = level >= LogLevel.Error
+            ? Constants.TOKEN_ERROR
+            : Constants.TOKEN_LOG;
+
+        _pipeWriter.WriteLine($"{token}[{_marker}] {level}: {message}{token}");
     }
 }

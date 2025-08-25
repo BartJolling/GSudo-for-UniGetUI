@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -27,31 +28,41 @@ public static class IntegrityCheck
 #endif
     ];
 
-    public static List<ValidationFailed> VerifyCallerProcess()
+    public static List<ValidationFail> VerifyCallerProcess()
     {
-        var results = new List<ValidationFailed>();
+        var results = new List<ValidationFail>();
 
         var current = Process.GetCurrentProcess();
-        var parent = GetParentProcess();
-
-        if (current.GetExeName() == current.GetParentProcess()?.GetExeName())
-            return results; // Self-elevation, skip checks
+        var parentLazy = new Lazy<Process>(() => GetParentProcess());
 
         var rules = new List<IValidationRule>
         {
-            new ProcessNameRule(current, VALID_PROCESS_NAME),
+            new ParentProcessAlive(current, parentLazy), // Must be first to do basic parent process validation
+            new CurrentProcessNameRule(current, VALID_PROCESS_NAME),
             new HelperDllRule(Path.Combine(Path.GetDirectoryName(current.MainModule?.FileName) ?? "", VALID_HELPER_DLL_NAME), VALID_HELPER_DLL_HASH),
-            new ParentProcessNameRule(parent, VALID_PARENT_PROCESS_NAMES),
-            new ParentProcessSignatureRule(parent, VALID_PARENT_SUBJECTS)
+            new ParentProcessNameRule(parentLazy, VALID_PARENT_PROCESS_NAMES),
+            new ParentProcessSignatureRule(parentLazy, VALID_PARENT_SUBJECTS)
         };
 
         foreach (var rule in rules)
         {
             var result = rule.Validate();
-            if (result is ValidationFailed failed)
+
+            if (result is ValidationAbort aborted)
+            {
+                results.Add(aborted);
+                Logger.Instance.Log($"[{aborted.RuleName}] {aborted.Code}: {aborted.Message} Skipping further checks", LogLevel.Error);
+                return results;
+            }
+            else if (result is ValidationFail failed)
             {
                 results.Add(failed);
                 Logger.Instance.Log($"[{failed.RuleName}] {failed.Code}: {failed.Message}", LogLevel.Warning);
+            }
+            else if (result is ValidationSkip skipped)
+            {
+                Logger.Instance.Log($"[{skipped.RuleName}] {skipped.Code}: {skipped.Message} Skipping further checks", LogLevel.Info);
+                return results;
             }
             else
             {
@@ -65,6 +76,7 @@ public static class IntegrityCheck
     public static Process GetParentProcess()
     {
         var parentProcess = Process.GetCurrentProcess();
+
         while (parentProcess?.ProcessName == VALID_PROCESS_NAME)
             parentProcess = parentProcess.GetParentProcess();
 

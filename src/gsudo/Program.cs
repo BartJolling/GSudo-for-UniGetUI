@@ -34,7 +34,9 @@ namespace gsudo
                 if (cmd is ServiceCommand svcCmd)
                 {
                     // send logs to the parent process via named pipe, e.g. logs when integrity check fails
-                    Logger.Instance.RegisterSink(new BufferedPipeSink());
+                    Logger.Instance.RegisterSink(new BufferedPipeSink(svcCmd.SingleUse));
+
+                    Logger.Instance.Log(svcCmd.ToString(), LogLevel.Debug);
                 }
 #if !DISABLE_INTEGRITY
                 else
