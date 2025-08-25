@@ -2,7 +2,6 @@
 using gsudo.Native;
 using gsudo.ProcessRenderers;
 using gsudo.Rpc;
-using gsudo.Tokens;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -85,11 +84,11 @@ namespace gsudo.Commands
             }
             finally
             {
-                try 
-                { 
-                    Console.Title = originalWindowTitle; 
-                } 
-                catch 
+                try
+                {
+                    Console.Title = originalWindowTitle;
+                }
+                catch
                 { }
             }
         }
@@ -120,7 +119,7 @@ namespace gsudo.Commands
                     serviceLocation = await ServiceHelper.WaitForNewService(callingPid).ConfigureAwait(false);
                 }
 
-                if (serviceLocation==null)
+                if (serviceLocation == null)
                     throw new ApplicationException("Unable to connect to the elevated service.");
 
                 if (false)
@@ -143,6 +142,11 @@ namespace gsudo.Commands
                 Logger.Instance.Log($"Process exited with code {exitCode}", LogLevel.Debug);
 
                 return exitCode;
+            }
+            catch (Exception ex)
+            {
+                Logger.Instance.Log(ex.Message, LogLevel.Error);
+                throw;
             }
             finally
             {
@@ -268,7 +272,7 @@ namespace gsudo.Commands
         }
 
         /// <summary>
-        /// Decide wheter we will use raw piped I/O screen communication, 
+        /// Decide wheter we will use raw piped I/O screen communication,
         /// or enhanced, colorfull VT mode with nice TAB auto-complete.
         /// </summary>
         /// <returns></returns>
@@ -277,7 +281,7 @@ namespace gsudo.Commands
             if (Settings.ForcePipedConsole)
                 return ElevationRequest.ConsoleMode.Piped;
 
-            // When running as other user => 
+            // When running as other user =>
             bool runningAsOtherUser = InputArguments.UserName != null && // Elevating as someone else, we don't want to user caller profile and just switch tokens, We want to use target user profile.
                                       !SecurityHelper.IsAdministrator(); // And if caller is not elevated => attach mode works.
 
@@ -309,7 +313,7 @@ namespace gsudo.Commands
                     || Console.IsOutputRedirected)
                 {
                     // Attached mode doesnt supports redirection.
-                    return ElevationRequest.ConsoleMode.Piped; 
+                    return ElevationRequest.ConsoleMode.Piped;
                 }
                 if (InputArguments.TrustedInstaller)
                     return ElevationRequest.ConsoleMode.VT; // workaround for #173
@@ -348,7 +352,7 @@ namespace gsudo.Commands
             var title = Console.Title;
             var colonPos = title.IndexOf(":", StringComparison.InvariantCulture);
             if (colonPos > 1) // no accidental modifying of "C:\..."
-                Console.Title = title.Substring(colonPos+1).TrimStart();
-        }          
+                Console.Title = title.Substring(colonPos + 1).TrimStart();
+        }
     }
 }

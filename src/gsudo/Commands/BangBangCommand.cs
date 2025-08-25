@@ -14,7 +14,7 @@ namespace gsudo.Commands
 
         public Task<int> Execute()
         {
-            if (ShellHelper.InvokingShell.In (Shell.PowerShell, Shell.PowerShellCore, Shell.PowerShellCore623BuggedGlobalInstall))
+            if (ShellHelper.InvokingShell.In(Shell.PowerShell, Shell.PowerShellCore, Shell.PowerShellCore623BuggedGlobalInstall))
             {
                 throw new ApplicationException($"To use `gsudo !!` from PowerShell, run or add the following line to your PowerShell $PROFILE:\n\n Import-Module 'gsudoModule'");
             }

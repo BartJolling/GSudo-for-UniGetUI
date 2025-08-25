@@ -14,7 +14,7 @@ namespace gsudo.Commands
         public bool SendSigBreak { get; set; }
 
         public Task<int> Execute()
-        {            
+        {
             FreeConsole();
 
             if (AttachConsole(Pid))
